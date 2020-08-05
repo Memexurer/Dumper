@@ -1,4 +1,5 @@
 package pl.memexurer.dumper;
+
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
@@ -13,21 +14,30 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 
 public class Dumper {
-    private static final String FILE_NAME_CHECKSUM = "";
-    private static final String USERNAME = "";
-    private static final String PASSWORD = "";
-    private static final String PRODUCT_NAME = "safemc-anticrash";
+    private static final InetSocketAddress SERVER_ADDRESS = new InetSocketAddress("79.137.50.237", 2115);
 
-    public static void main(String[] args) throws Exception {
+    private final String productName;
+    private final String name;
+    private final String password;
+    private final File file;
+
+    private Dumper(String productName, String name, String password, File file) {
+        this.productName = productName;
+        this.name = name;
+        this.password = password;
+        this.file = file;
+    }
+
+    private void connect() {
         Socket socket = new Socket();
 
         try {
-            socket.connect(new InetSocketAddress("79.137.50.237", 2115));
+            socket.connect(SERVER_ADDRESS);
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
 
             int packetId = dataInputStream.readInt();
-            if(packetId != 0) {
+            if (packetId != 0) {
                 System.out.println("cos sie zjebalo xddd");
                 return;
             }
@@ -43,10 +53,10 @@ public class Dumper {
 
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             DataOutputStream outputStream1 = new DataOutputStream(byteArrayOutputStream);
-            outputStream1.writeUTF(PRODUCT_NAME);
-            outputStream1.writeUTF(USERNAME);
-            outputStream1.writeUTF(PASSWORD);
-            outputStream1.writeUTF(getHash(Files.readAllBytes(new File(FILE_NAME_CHECKSUM).toPath())));
+            outputStream1.writeUTF(productName);
+            outputStream1.writeUTF(name);
+            outputStream1.writeUTF(password);
+            outputStream1.writeUTF(getHash(Files.readAllBytes(file.toPath())));
             outputStream1.writeBoolean(false);
             outputStream1.close();
 
@@ -70,18 +80,26 @@ public class Dumper {
 
                 dumperData.save();
                 dumperData1.save();
-
-                try {
-                    System.out.println(dataInputStream1.readUTF());
-                } catch (Exception gze) {
-                    gze.printStackTrace();
-                }
             }
-
-
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void main(String[] args) {
+        if (args.length != 4) {
+            System.out.println("Uzycie: dumper (nazwa produktu) (nick) (haslo) (sciezka do jarki launchera)");
+            return;
+        }
+
+        File launcherJarFile = new File(args[3]);
+        if (!launcherJarFile.exists()) {
+            System.out.println("Nie znaleziono launchera.");
+            return;
+        }
+
+        System.out.println("odpalanie tego czegos...");
+        new Dumper(args[0], args[1], args[2], launcherJarFile).connect();
     }
 
     private static String getHash(byte[] bytes) throws Exception {
