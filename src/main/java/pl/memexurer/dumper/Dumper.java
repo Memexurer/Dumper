@@ -68,7 +68,7 @@ public class Dumper {
 
             System.out.println(packetId1);
             if (packetId1 == 1) {
-                System.out.println("Invalid checksum.");
+                System.out.println("Wystapil blad: " + dataInputStream1.readUTF());
                 return;
             }
 
